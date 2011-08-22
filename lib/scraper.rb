@@ -60,8 +60,10 @@ module Scraper
 
   protected
     def fetch
-      logger.info "\nFetching #{@url}..."
+      #logger.info "\nFetching #{@url} ..."
+      print "\nFetching ... "
       @doc = agent.get(@url)
+      puts @doc.uri
     end
 
     def crawl_child(klass, url)
