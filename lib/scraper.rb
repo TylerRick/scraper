@@ -6,7 +6,7 @@ require 'net/https'
 #require 'logger'
 
 require 'mechanize'
-
+require 'retryable'
 require 'active_support/core_ext/module/attribute_accessors'
 
 #---------------------------------------------------------------------------------------------------
@@ -60,10 +60,17 @@ module Scraper
 
   protected
     def fetch
-      #logger.info "\nFetching #{@url} ..."
-      print "\nFetching ... "
-      @doc = agent.get(@url)
-      puts @doc.uri
+      # Or just rescue their parent class, SystemCallError?
+      retryable(:on => [Errno::ETIMEDOUT, Errno::ECONNRESET],
+        :tries => 3,
+        :sleep => lambda { |n| (3**n).tap {|delay| puts "Sleeping for #{delay} seconds..."}  }
+      ) do |retries, exception|
+        puts "Failed with exception: #{exception} (attempt # #{retries}). Retrying..." if retries > 0
+
+        print "\nFetching ... "
+        @doc = agent.get(@url)
+        puts @doc.uri
+      end
     end
 
     def crawl_child(klass, url)
